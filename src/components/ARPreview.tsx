@@ -1,10 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadArJs } from '../ar/scripts'
-import { ArJsProvider } from '../ar/providers'
-import type { Anchor, MapCenter } from '../domain'
+import {
+  buildWaypoints,
+  distanceRemaining,
+  hasArrived,
+  nextStep,
+  type Destination,
+  type Route,
+} from '../route'
+import type { MapCenter } from '../domain'
 
 interface Props {
-  anchors: Anchor[]
+  route: Route | null
+  routeLoading: boolean
+  destination: Destination | null
   origin: MapCenter
   onExit: () => void
 }
@@ -15,7 +24,7 @@ function stopCameraTracks(root: HTMLElement | null) {
     .forEach((v) => (v.srcObject as MediaStream | null)?.getTracks().forEach((t) => t.stop()))
 }
 
-export default function ARPreview({ anchors, origin, onExit }: Props) {
+export default function ARPreview({ route, routeLoading, destination, origin, onExit }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,10 +48,13 @@ export default function ARPreview({ anchors, origin, onExit }: Props) {
     }
   }, [])
 
-  const specs = useMemo(() => {
-    const provider = new ArJsProvider()
-    return provider.place(anchors, origin)
-  }, [anchors, origin])
+  const waypoints = useMemo(
+    () => (route ? buildWaypoints(route.points, route.steps) : []),
+    [route],
+  )
+  const upcoming = route ? nextStep(origin, route) : null
+  const remaining = route ? distanceRemaining(origin, route) : Infinity
+  const arrived = destination ? hasArrived(origin, destination) : false
 
   return (
     <div className="relative h-full w-full bg-black">
@@ -63,9 +75,27 @@ export default function ARPreview({ anchors, origin, onExit }: Props) {
           {error} Check your connection (CDN scripts) and reload.
         </div>
       )}
-      {ready && specs.length === 0 && (
+      {ready && !route && !routeLoading && (
         <div className="absolute inset-x-0 top-2 z-10 mx-auto w-fit rounded bg-slate-900/90 px-3 py-1 text-sm">
-          No anchors in anchors.json.
+          No route yet — get a GPS fix on the map first.
+        </div>
+      )}
+      {ready && route && (
+        <div className="absolute inset-x-0 top-2 z-10 mx-auto flex w-fit max-w-[90%] flex-col items-center gap-1 rounded bg-slate-900/90 px-3 py-1.5 text-center shadow">
+          {arrived ? (
+            <span className="text-sm font-semibold text-emerald-300">
+              Arrived at {destination?.label}
+            </span>
+          ) : (
+            <>
+              <span className="text-sm font-medium">
+                {upcoming ? upcoming.instruction : `Head to ${destination?.label ?? 'destination'}`}
+              </span>
+              <span className="text-xs text-slate-300">
+                {Math.round(remaining)} m to go{route.fallback ? ' (direct line)' : ''}
+              </span>
+            </>
+          )}
         </div>
       )}
       {ready && (
@@ -76,23 +106,25 @@ export default function ARPreview({ anchors, origin, onExit }: Props) {
             vr-mode-ui="enabled: false"
             renderer="antialias: true; alpha: true"
           >
-            {specs.map((s) =>
-              s.geometry ? (
-                <a-entity
-                  key={s.key}
-                  gps-entity-place={s.placeAttr}
-                  geometry={s.geometry}
-                  material={s.material}
-                  rotation={s.rotation}
-                />
-              ) : (
-                <a-entity
-                  key={s.key}
-                  gps-entity-place={s.placeAttr}
-                  text={s.text}
-                  rotation={s.rotation}
-                />
-              ),
+            {waypoints.map((w, i) => (
+              <a-entity
+                key={`${w.lat.toFixed(6)}:${w.lng.toFixed(6)}:${i}`}
+                gps-entity-place={`latitude: ${w.lat}; longitude: ${w.lng};`}
+                geometry={
+                  w.maneuverStep !== null
+                    ? 'primitive: sphere; radius: 0.9'
+                    : 'primitive: sphere; radius: 0.5'
+                }
+                material={w.maneuverStep !== null ? 'color: #fbbf24' : 'color: #38bdf8'}
+              />
+            ))}
+            {destination && (
+              <a-entity
+                key={destination.id}
+                gps-entity-place={`latitude: ${destination.lat}; longitude: ${destination.lng};`}
+                geometry="primitive: sphere; radius: 1.2"
+                material="color: #fbbf24"
+              />
             )}
             <a-camera gps-camera="gpsMinDistance: 2" rotation-reader />
           </a-scene>
