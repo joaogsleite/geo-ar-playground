@@ -2,9 +2,7 @@ import { useMemo, useState } from 'react'
 import ARPreview from './components/ARPreview'
 import MapEditor from './components/MapEditor'
 import { useLocation } from './hooks/useLocation'
-import { useRoute } from './hooks/useRoute'
 import { parseAnchors, type Anchor } from './domain'
-import { destinationOf } from './route'
 import anchorsJson from './anchors.json'
 
 type View = 'map' | 'ar'
@@ -24,10 +22,8 @@ function loadAnchors(): { anchors: Anchor[]; error: string | null } {
 export default function App() {
   const [view, setView] = useState<View>('map')
   const { anchors, error: anchorsError } = useMemo(loadAnchors, [])
-  const destination = useMemo(() => destinationOf(anchors), [anchors])
   const { gps, gpsError, permission, requestLocation, requestState, lastAttemptAt } =
     useLocation()
-  const { route, routeError, routeLoading, recalc } = useRoute(gps, destination)
 
   const denied =
     permission === 'denied' || (!gps && /denied/i.test(gpsError ?? ''))
@@ -49,10 +45,6 @@ export default function App() {
         {anchorsError ? (
           <div className="flex h-full items-center justify-center p-6 text-center text-sm text-red-300">
             Invalid anchors.json: {anchorsError} Fix src/anchors.json and reload.
-          </div>
-        ) : !destination ? (
-          <div className="flex h-full items-center justify-center p-6 text-center text-sm text-slate-400">
-            No anchors in anchors.json — add at least one to navigate to.
           </div>
         ) : !gps ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
@@ -97,18 +89,11 @@ export default function App() {
           <MapEditor
             anchors={anchors}
             center={gps}
-            destination={destination}
-            route={route}
-            routeLoading={routeLoading}
-            routeError={routeError}
-            onRecalc={recalc}
             onEnterAr={() => setView('ar')}
           />
         ) : (
           <ARPreview
-            route={route}
-            routeLoading={routeLoading}
-            destination={destination}
+            anchors={anchors}
             origin={gps}
             onExit={() => setView('map')}
           />

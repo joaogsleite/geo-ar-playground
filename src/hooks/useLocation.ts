@@ -7,33 +7,7 @@ export interface GpsFix extends MapCenter {
 }
 
 /**
- * Parse a dev-only `?replay=lat,lng|lat,lng` track into fake GPS fixes.
- * Returns null when absent or invalid. Dev builds only.
- */
-function parseReplayTrack(): GpsFix[] | null {
-  if (!import.meta.env.DEV) return null
-  try {
-    const raw = new URLSearchParams(window.location.search).get('replay')
-    if (!raw) return null
-    const pts = raw
-      .split(/[|;]/)
-      .map((pair) => pair.split(',').map(Number))
-      .filter(
-        ([la, ln]) =>
-          Number.isFinite(la) && Number.isFinite(ln) && Math.abs(la) <= 90 && Math.abs(ln) <= 180,
-      )
-      .map(([lat, lng], i) => ({ lat, lng, accuracy: 5, timestamp: Date.now() + i }))
-    return pts.length > 0 ? pts : null
-  } catch {
-    return null
-  }
-}
-/**
  * Live GPS only. No manual/mock override: the map and AR gate on a real fix.
- *
- * Dev-only exception: `?replay=lat,lng|lat,lng` feeds a canned track as fake
- * GPS (cycles every 2.5s) for desk testing. Hidden, no UI surface, stripped
- * from production builds.
  *
  * A load-time watchPosition alone often never surfaces a browser prompt, so
  * we also expose the permission state and a gesture-driven
@@ -49,7 +23,6 @@ export function useLocation() {
     'idle',
   )
   const [lastAttemptAt, setLastAttemptAt] = useState<number | null>(null)
-  const [replay] = useState<GpsFix[] | null>(parseReplayTrack)
 
   const applyFix = useCallback((p: GeolocationPosition) => {
     setGps({
@@ -70,18 +43,6 @@ export function useLocation() {
   }, [])
 
   useEffect(() => {
-    if (replay) {
-      setGps(replay[0])
-      setGpsError(null)
-      if (replay.length < 2) return
-      let i = 0
-      const id = window.setInterval(() => {
-        i = (i + 1) % replay.length
-        setGps({ ...replay[i], timestamp: Date.now() })
-        setGpsError(null)
-      }, 2500)
-      return () => window.clearInterval(id)
-    }
     if (!('geolocation' in navigator)) {
       setGpsError('Geolocation is not available in this browser.')
       return
@@ -92,7 +53,7 @@ export function useLocation() {
       timeout: 20000,
     })
     return () => navigator.geolocation.clearWatch(id)
-  }, [applyFix, applyError, replay])
+  }, [applyFix, applyError])
 
   useEffect(() => {
     let status: PermissionStatus | null = null

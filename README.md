@@ -11,8 +11,6 @@ coordinates through a mobile camera. See `GLOSSARY.md` for the domain language.
 - AR: AR.js location-based + A-Frame behind an `AnchorProvider` interface,
   lazy-loaded from pinned CDN (see `docs/adr/0001-arjs-provider-interface-cdn.md`
   and `docs/adr/0002-single-anchors-json-no-mock.md`)
-- Routing: OSRM demo server (foot profile) behind a `RouteProvider`
-  interface, no key (see `docs/adr/0003-osrm-walking-route.md`)
 - No backend, no persistence: anchors ship in `src/anchors.json`
 - PWA manifest + Cloudflare-tunnel testing (public HTTPS comes from the tunnel)
 
@@ -40,18 +38,4 @@ the map, and AR needs a phone with GPS + camera.
 ## Anchors
 
 Edit `src/anchors.json` (validated at load by `parseAnchors` in
-`src/domain.ts`), then rebuild. The walking route always ends at the first
-anchor in the array.
-
-## Navigation
-
-After the GPS fix, the map auto-fetches a walking route to the first anchor
-(OSRM, foot profile) and draws it as a polyline. `Enter AR` shows waypoint
-markers (blue, gold at maneuvers and the destination) plus a HUD with the
-next instruction and distance remaining. Off-route (>25m for >5s) or a
->50m move triggers a refetch; `Recalculate` forces one. OSRM failures fall
-back to a direct line with a warning.
-
-Desk testing without walking: open with
-`?replay=lat,lng|lat,lng` — the app cycles the listed points as fake GPS
-(dev-only, no UI).
+`src/domain.ts`), then rebuild.
