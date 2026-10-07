@@ -1,6 +1,19 @@
 import { spawn } from 'node:child_process'
+import { readFileSync, writeFileSync } from 'node:fs'
 
-const PORT = process.env.PORT ?? '5173'
+function parseFlag(argv, name) {
+  const idx = argv.indexOf(`--${name}`)
+  if (idx !== -1 && argv[idx + 1] && !argv[idx + 1].startsWith('--')) {
+    return argv[idx + 1]
+  }
+  const eq = argv.find((a) => a.startsWith(`--${name}=`))
+  if (eq) return eq.slice(name.length + 3)
+  return null
+}
+
+const argv = process.argv.slice(2)
+const PORT = parseFlag(argv, 'port') ?? process.env.PORT ?? '5173'
+const STATE_PATH = parseFlag(argv, 'state') ?? process.env.TUNNEL_STATE ?? null
 const ORIGIN = `http://localhost:${PORT}`
 
 const vite = spawn('npm', ['run', 'dev', '--', '--port', PORT, '--strictPort'], {
@@ -21,6 +34,15 @@ function sniff(chunk) {
   if (match && !printedUrl) {
     printedUrl = true
     console.log(`\nTunnel URL (send it to your friends):\n\n  ${match[0]}\n`)
+    if (STATE_PATH) {
+      try {
+        const state = JSON.parse(readFileSync(STATE_PATH, 'utf8'))
+        state.url = match[0]
+        writeFileSync(STATE_PATH, JSON.stringify(state, null, 2))
+      } catch {
+        // Best-effort: the URL is already on stdout/stderr (captured to the log).
+      }
+    }
   }
 }
 

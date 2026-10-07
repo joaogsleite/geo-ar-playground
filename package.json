@@ -8,7 +8,11 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "tunnel": "node scripts/tunnel.mjs"
+    "tunnel": "node scripts/tunnel.mjs",
+    "tunnel:start": "node scripts/tunnel-ctl.mjs start",
+    "tunnel:status": "node scripts/tunnel-ctl.mjs status",
+    "tunnel:stop": "node scripts/tunnel-ctl.mjs stop",
+    "tunnel:logs": "node scripts/tunnel-ctl.mjs logs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
