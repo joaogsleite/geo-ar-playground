@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  overscroll-behavior: none;
+}
+
+/* Leaflet sits inside Tailwind; keep panes below our UI chrome. */
+.leaflet-pane {
+  z-index: 10;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 20;
+}
+
+.ar-scene-container a-scene,
+.ar-scene-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}

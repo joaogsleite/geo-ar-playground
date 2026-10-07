@@ -1,0 +1,35 @@
+[
+  {
+    "id": "north-box",
+    "label": "North box",
+    "kind": "box",
+    "lat": 38.717,
+    "lng": -9.1399,
+    "altitude": 0,
+    "color": "#38bdf8",
+    "size": 2,
+    "rotationY": 0
+  },
+  {
+    "id": "east-sphere",
+    "label": "East sphere",
+    "kind": "sphere",
+    "lat": 38.7169,
+    "lng": -9.1397,
+    "altitude": 0,
+    "color": "#f472b6",
+    "size": 2.5,
+    "rotationY": 0
+  },
+  {
+    "id": "south-label",
+    "label": "South",
+    "kind": "text",
+    "lat": 38.7167,
+    "lng": -9.1399,
+    "altitude": 0,
+    "color": "#e2e8f0",
+    "size": 3,
+    "rotationY": 0
+  }
+]
